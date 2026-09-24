@@ -1,0 +1,76 @@
+{
+  "patients": [
+    {"patient_id": "P001", "name": "张三", "age": 45, "gender": "男", "insurance_type": "职工医保"},
+    {"patient_id": "P002", "name": "李四", "age": 62, "gender": "女", "insurance_type": "居民医保"},
+    {"patient_id": "P003", "name": "王五", "age": 38, "gender": "男", "insurance_type": "职工医保"},
+    {"patient_id": "P004", "name": "赵六", "age": 55, "gender": "女", "insurance_type": "职工医保"}
+  ],
+  "visits": [
+    {"visit_id": "V001", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-05", "diagnosis": "高血压"},
+    {"visit_id": "V002", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-06", "diagnosis": "高血压"},
+    {"visit_id": "V003", "patient_id": "P001", "hospital_id": "H002", "department": "心内科", "visit_date": "2024-01-07", "diagnosis": "高血压"},
+    {"visit_id": "V004", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-12", "diagnosis": "高血压"},
+    {"visit_id": "V005", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-13", "diagnosis": "高血压"},
+    {"visit_id": "V006", "patient_id": "P002", "hospital_id": "H003", "department": "骨科", "visit_date": "2024-01-10", "diagnosis": "腰椎间盘突出"},
+    {"visit_id": "V007", "patient_id": "P002", "hospital_id": "H003", "department": "骨科", "visit_date": "2024-01-11", "diagnosis": "腰椎间盘突出"},
+    {"visit_id": "V008", "patient_id": "P003", "hospital_id": "H001", "department": "神经内科", "visit_date": "2024-01-08", "diagnosis": "头痛"},
+    {"visit_id": "V009", "patient_id": "P003", "hospital_id": "H001", "department": "神经内科", "visit_date": "2024-01-09", "diagnosis": "头痛"},
+    {"visit_id": "V010", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-15", "diagnosis": "高血压"},
+    {"visit_id": "V011", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-19", "diagnosis": "高血压"},
+    {"visit_id": "V012", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-20", "diagnosis": "高血压"},
+    {"visit_id": "V013", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-26", "diagnosis": "高血压"},
+    {"visit_id": "V014", "patient_id": "P001", "hospital_id": "H001", "department": "心内科", "visit_date": "2024-01-27", "diagnosis": "高血压"},
+    {"visit_id": "V015", "patient_id": "P002", "hospital_id": "H003", "department": "骨科", "visit_date": "2024-01-12", "diagnosis": "腰椎间盘突出"},
+    {"visit_id": "V016", "patient_id": "P004", "hospital_id": "H004", "department": "肿瘤科", "visit_date": "2024-01-03", "diagnosis": "恶性肿瘤"},
+    {"visit_id": "V017", "patient_id": "P004", "hospital_id": "H004", "department": "肿瘤科", "visit_date": "2024-01-10", "diagnosis": "恶性肿瘤"},
+    {"visit_id": "V018", "patient_id": "P004", "hospital_id": "H004", "department": "肿瘤科", "visit_date": "2024-01-17", "diagnosis": "恶性肿瘤"},
+    {"visit_id": "V019", "patient_id": "P004", "hospital_id": "H004", "department": "肿瘤科", "visit_date": "2024-01-24", "diagnosis": "恶性肿瘤"}
+  ],
+  "expenses": [
+    {"expense_id": "E001", "visit_id": "V001", "amount": 520, "self_pay_ratio": 0.15, "items": ["药品", "检查"]},
+    {"expense_id": "E002", "visit_id": "V002", "amount": 480, "self_pay_ratio": 0.12, "items": ["药品"]},
+    {"expense_id": "E003", "visit_id": "V003", "amount": 1850, "self_pay_ratio": 0.02, "items": ["急诊", "药品", "检查"]},
+    {"expense_id": "E004", "visit_id": "V004", "amount": 620, "self_pay_ratio": 0.18, "items": ["药品", "检查"]},
+    {"expense_id": "E005", "visit_id": "V005", "amount": 550, "self_pay_ratio": 0.14, "items": ["药品"]},
+    {"expense_id": "E006", "visit_id": "V006", "amount": 1200, "self_pay_ratio": 0.20, "items": ["检查", "药品"]},
+    {"expense_id": "E007", "visit_id": "V007", "amount": 850, "self_pay_ratio": 0.16, "items": ["药品"]},
+    {"expense_id": "E008", "visit_id": "V008", "amount": 320, "self_pay_ratio": 0.25, "items": ["检查"]},
+    {"expense_id": "E009", "visit_id": "V009", "amount": 320, "self_pay_ratio": 0.25, "items": ["检查"]},
+    {"expense_id": "E010", "visit_id": "V010", "amount": 2100, "self_pay_ratio": 0.01, "items": ["急诊", "药品", "检查"]},
+    {"expense_id": "E011", "visit_id": "V011", "amount": 580, "self_pay_ratio": 0.15, "items": ["药品", "检查"]},
+    {"expense_id": "E012", "visit_id": "V012", "amount": 620, "self_pay_ratio": 0.14, "items": ["药品", "检查"]},
+    {"expense_id": "E013", "visit_id": "V013", "amount": 560, "self_pay_ratio": 0.16, "items": ["药品"]},
+    {"expense_id": "E014", "visit_id": "V014", "amount": 540, "self_pay_ratio": 0.15, "items": ["药品"]},
+    {"expense_id": "E015", "visit_id": "V015", "amount": 980, "self_pay_ratio": 0.18, "items": ["药品"]},
+    {"expense_id": "E016", "visit_id": "V016", "amount": 15000, "self_pay_ratio": 0.05, "items": ["化疗", "药品"]},
+    {"expense_id": "E017", "visit_id": "V017", "amount": 18000, "self_pay_ratio": 0.03, "items": ["化疗", "检查"]},
+    {"expense_id": "E018", "visit_id": "V018", "amount": 16500, "self_pay_ratio": 0.04, "items": ["化疗", "药品"]},
+    {"expense_id": "E019", "visit_id": "V019", "amount": 22000, "self_pay_ratio": 0.02, "items": ["化疗", "检查", "药品"]}
+  ],
+  "doctors": {
+    "D001": {"name": "刘医生", "department": "心内科", "hospital_id": "H001"},
+    "D002": {"name": "王医生", "department": "骨科", "hospital_id": "H003"},
+    "D003": {"name": "陈医生", "department": "肿瘤科", "hospital_id": "H004"}
+  },
+  "hospitals": {
+    "H001": {"name": "第一人民医院", "level": "三级甲等"},
+    "H002": {"name": "第二人民医院", "level": "三级乙等"},
+    "H003": {"name": "康复专科医院", "level": "二级"},
+    "H004": {"name": "肿瘤专科医院", "level": "三级甲等"}
+  },
+  "drug_mismatch": [
+    {"patient_id": "P001", "drug": "抗生素", "diagnosis": "高血压", "visit_id": "V003"},
+    {"patient_id": "P002", "drug": "止痛药", "diagnosis": "腰椎间盘突出", "visit_id": "V007"}
+  ],
+  "duplicate_tests": [
+    {"patient_id": "P003", "test_name": "头部CT", "visit_ids": ["V008", "V009"]},
+    {"patient_id": "P004", "test_name": "肿瘤标志物检查", "visit_ids": ["V016", "V017"]}
+  ],
+  "patient_anomalies": [
+    {"patient_id": "P001", "type": "串号就医", "description": "使用多个医保号就诊"},
+    {"patient_id": "P004", "type": "异地高频就医", "description": "连续4周在异地肿瘤医院就诊"}
+  ],
+  "suspicious_doctors": [
+    {"doctor_id": "D001", "name": "刘医生", "description": "处方量异常，开具大量高价药"}
+  ]
+}

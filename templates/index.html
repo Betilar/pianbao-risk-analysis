@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医保欺诈风险识别系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-section.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .upload-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-section p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .result-section {
+            display: none;
+        }
+        
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .risk-level {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .risk-badge {
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .risk-badge.red { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%); }
+        .risk-badge.orange { background: linear-gradient(135deg, #ffa502 0%, #ff7f50 100%); }
+        .risk-badge.yellow { background: linear-gradient(135deg, #ffd93d 0%, #f9ca24 100%); color: #333; }
+        .risk-badge.green { background: linear-gradient(135deg, #2ed573 0%, #1dd1a1 100%); }
+        
+        .score-display {
+            text-align: center;
+        }
+        
+        .score-value {
+            font-size: 72px;
+            font-weight: bold;
+            color: #667eea;
+            line-height: 1;
+        }
+        
+        .score-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .suggestion-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+        
+        .suggestion-box p {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .factors-list {
+            list-style: none;
+        }
+        
+        .factors-list li {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .factors-list li:hover {
+            background: #e9ecef;
+        }
+        
+        .factor-score {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .summary-card .label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .detailed-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .detailed-table th, .detailed-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detailed-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .detailed-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .type-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .type-badge.behavior { background: #ff6b6b; }
+        .type-badge.medical { background: #ffa502; }
+        .type-badge.cost { background: #ffd93d; color: #333; }
+        .type-badge.hospital { background: #2ed573; }
+        .type-badge.doctor { background: #70a1ff; }
+        .type-badge.patient { background: #a29bfe; }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .data-format {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .data-format h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .data-format pre {
+            background: #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 医保欺诈风险识别系统</h1>
+            <p>基于多维度数据分析的智能风险评估平台</p>
+        </div>
+        
+        <div class="main-card">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📁</div>
+                <h3>上传医保数据文件</h3>
+                <p>支持 JSON 或 TXT 格式文件</p>
+                <input type="file" id="fileInput" accept=".json,.txt">
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">选择文件</button>
+                <button class="btn btn-secondary" onclick="loadSampleData()">使用示例数据</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>正在分析数据，请稍候...</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="result-section" id="resultSection">
+                <div class="risk-header">
+                    <div class="risk-level">
+                        <span class="risk-badge" id="riskBadge">高风险</span>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-value" id="scoreValue">85</div>
+                        <div class="score-label">综合评分</div>
+                    </div>
+                </div>
+                
+                <div class="suggestion-box">
+                    <p><strong>建议处置：</strong><span id="suggestion">建议移交</span></p>
+                </div>
+                
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="value" id="totalPatients">0</div>
+                        <div class="label">患者数量</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="totalVisits">0</div>
+                        <div class="label">就诊次数</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="totalExpenses">0</div>
+                        <div class="label">总费用(元)</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="avgExpense">0</div>
+                        <div class="label">平均费用(元)</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="section-title">🔴 异常指标汇总（TOP 5）</div>
+                    <ul class="factors-list" id="topFactors"></ul>
+                </div>
+                
+                <div>
+                    <div class="section-title">📋 具体风险描述</div>
+                    <table class="detailed-table">
+                        <thead>
+                            <tr>
+                                <th>风险类型</th>
+                                <th>异常项</th>
+                                <th>详细说明</th>
+                                <th>风险分值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailedFactors"></tbody>
+                    </table>
+                </div>
+                
+                <div>
+                    <div class="section-title">📊 数据支撑</div>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="value" id="nightVisits">0</div>
+                            <div class="label">夜间就诊次数</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="value" id="holidayVisits">0</div>
+                            <div class="label">节假日就诊次数</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <button class="btn btn-primary" onclick="resetAnalysis()">重新分析</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-card">
+            <div class="data-format">
+                <h4>📝 数据输入格式说明</h4>
+                <pre>{
+  "patients": [
+    {"patient_id": "P001", "name": "张三", "age": 45, "gender": "男", "insurance_type": "职工医保"}
+  ],
+  "visits": [
+    {"visit_id": "V001", "patient_id": "P001", "hospital_id": "H001", 
+     "department": "心内科", "visit_date": "2024-01-05", "diagnosis": "高血压"}
+  ],
+  "expenses": [
+    {"expense_id": "E001", "visit_id": "V001", "amount": 520, "self_pay_ratio": 0.15}
+  ],
+  "doctors": {"D001": {"name": "刘医生", "department": "心内科"}},
+  "hospitals": {"H001": {"name": "第一人民医院", "level": "三级甲等"}},
+  "drug_mismatch": [],
+  "duplicate_tests": [],
+  "patient_anomalies": []
+}</pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const uploadSection = document.getElementById('uploadSection');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultSection = document.getElementById('resultSection');
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+        
+        function processFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'json' && ext !== 'txt') {
+                showError('不支持的文件格式，请上传JSON或TXT文件');
+                return;
+            }
+            
+            uploadSection.style.display = 'none';
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            resultSection.style.display = 'none';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    analyzeData(data);
+                } catch (error) {
+                    showError('文件格式错误，需要有效的JSON格式');
+                    resetUI();
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadSampleData() {
+            uploadSection.style.display = 'none';
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            resultSection.style.display = 'none';
+            
+            fetch('/sample')
+                .then(response => response.json())
+                .then(data => analyzeData(data))
+                .catch(error => {
+                    showError('获取示例数据失败: ' + error.message);
+                    resetUI();
+                });
+        }
+        
+        function analyzeData(data) {
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    showError(result.error);
+                    resetUI();
+                    return;
+                }
+                displayResult(result);
+            })
+            .catch(error => {
+                showError('分析失败: ' + error.message);
+                resetUI();
+            });
+        }
+        
+        function displayResult(result) {
+            loading.style.display = 'none';
+            
+            document.getElementById('riskBadge').textContent = result.risk_level;
+            document.getElementById('riskBadge').className = 'risk-badge ' + result.risk_level_color;
+            document.getElementById('scoreValue').textContent = result.score;
+            document.getElementById('suggestion').textContent = result.suggestion;
+            
+            document.getElementById('totalPatients').textContent = result.data_summary.total_patients;
+            document.getElementById('totalVisits').textContent = result.data_summary.total_visits;
+            document.getElementById('totalExpenses').textContent = result.data_summary.total_expenses.toLocaleString();
+            document.getElementById('avgExpense').textContent = result.data_summary.avg_expense.toLocaleString();
+            document.getElementById('nightVisits').textContent = result.data_summary.night_visits;
+            document.getElementById('holidayVisits').textContent = result.data_summary.holiday_visits;
+            
+            const topFactorsList = document.getElementById('topFactors');
+            topFactorsList.innerHTML = '';
+            result.top_factors.forEach((factor, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${index + 1}. ${factor}</span>`;
+                topFactorsList.appendChild(li);
+            });
+            
+            const detailedTable = document.getElementById('detailedFactors');
+            detailedTable.innerHTML = '';
+            result.detailed_factors.forEach(factor => {
+                const tr = document.createElement('tr');
+                let typeClass = '';
+                switch(factor.type) {
+                    case '就诊行为异常': typeClass = 'behavior'; break;
+                    case '医学逻辑异常': typeClass = 'medical'; break;
+                    case '费用异常': typeClass = 'cost'; break;
+                    case '医疗机构异常': typeClass = 'hospital'; break;
+                    case '医生行为异常': typeClass = 'doctor'; break;
+                    case '患者行为异常': typeClass = 'patient'; break;
+                }
+                tr.innerHTML = `
+                    <td><span class="type-badge ${typeClass}">${factor.type}</span></td>
+                    <td>${factor.item}</td>
+                    <td>${factor.value || '-'}</td>
+                    <td><span class="factor-score">+${factor.score}</span></td>
+                `;
+                detailedTable.appendChild(tr);
+            });
+            
+            resultSection.style.display = 'block';
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        function resetUI() {
+            loading.style.display = 'none';
+            uploadSection.style.display = 'block';
+        }
+        
+        function resetAnalysis() {
+            resultSection.style.display = 'none';
+            uploadSection.style.display = 'block';
+            document.getElementById('fileInput').value = '';
+            errorMessage.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

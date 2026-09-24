@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医保欺诈风险识别系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold text-gray-900">🏥 医保欺诈风险识别系统</h1>
+            <p class="text-gray-600 mt-2">基于多维度数据分析的智能风险评估平台</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Upload Section -->
+        <section id="uploadSection" class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <!-- 分析模式切换 -->
+            <div class="mb-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">⚙️</span>
+                        <h3 class="text-sm font-semibold text-gray-800">分析运行模式</h3>
+                        <span id="modeStatusBadge" class="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700">检测中...</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border-2 border-transparent has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 hover:bg-gray-100">
+                            <input type="radio" name="analysisMode" value="auto" checked class="w-4 h-4 text-indigo-600">
+                            <span class="text-sm font-medium text-gray-700">自动（推荐）</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border-2 border-transparent has-[:checked]:bg-green-50 has-[:checked]:border-green-400 hover:bg-gray-100">
+                            <input type="radio" name="analysisMode" value="local" class="w-4 h-4 text-green-600">
+                            <span class="text-sm font-medium text-gray-700">纯前端本地</span>
+                        </label>
+                        <label id="serverModeLabel" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border-2 border-transparent has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400 hover:bg-gray-100">
+                            <input type="radio" name="analysisMode" value="server" disabled class="w-4 h-4 text-blue-600">
+                            <span class="text-sm font-medium text-gray-700">Flask 后端 API</span>
+                        </label>
+                    </div>
+                </div>
+                <p id="modeHint" class="mt-2 text-xs text-gray-500">正在检测后端服务可用性...</p>
+            </div>
+
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-4">📁</div>
+                <h2 class="text-2xl font-semibold text-gray-900 mb-2">数据输入</h2>
+                <p class="text-gray-600">支持多种格式的数据输入方式</p>
+            </div>
+
+            <!-- Input Tabs -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="tabFile" class="tab-btn active px-6 py-3 font-medium text-indigo-600 border-b-2 border-indigo-600">📂 文件上传</button>
+                <button id="tabText" class="tab-btn px-6 py-3 font-medium text-gray-500 hover:text-gray-700">📝 文本输入</button>
+                <button id="tabImage" class="tab-btn px-6 py-3 font-medium text-gray-500 hover:text-gray-700">🖼️ 图片识别</button>
+                <button id="tabPDF" class="tab-btn px-6 py-3 font-medium text-gray-500 hover:text-gray-700">📕 PDF解析</button>
+            </div>
+
+            <!-- File Upload Panel -->
+            <div id="panelFile" class="tab-panel">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <input type="file" id="fileInput" accept=".json,.txt,.csv" class="hidden">
+                    <button id="btnSelectFile" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        📂 选择文件 (JSON/TXT/CSV)
+                    </button>
+                    <button id="btnUseSample" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-lg transition-all duration-200 border border-gray-300">
+                        📊 使用示例数据
+                    </button>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-4">支持 JSON、TXT、CSV 格式文件</p>
+            </div>
+
+            <!-- Text Input Panel -->
+            <div id="panelText" class="tab-panel hidden">
+                <div class="mb-4">
+                    <textarea id="textInput" class="w-full h-48 p-4 border-2 border-gray-200 rounded-xl resize-none focus:border-indigo-500 focus:outline-none" placeholder="请直接输入医保数据文本...&#10;&#10;示例格式：&#10;患者ID: P001, 姓名: 张三, 年龄: 45, 就诊次数: 5, 费用: 2500元, 自付比例: 15%&#10;患者ID: P002, 姓名: 李四, 年龄: 62, 就诊次数: 3, 费用: 1800元, 自付比例: 20%"></textarea>
+                </div>
+                <div class="flex justify-center gap-4">
+                    <button id="btnTextAnalyze" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        🚀 分析文本数据
+                    </button>
+                    <button id="btnTextClear" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-lg transition-all duration-200 border border-gray-300">
+                        🗑️ 清空
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image Upload Panel -->
+            <div id="panelImage" class="tab-panel hidden">
+                <div class="text-center">
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    <div id="imageDropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-12 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all duration-200 cursor-pointer">
+                        <div class="text-6xl mb-4">📷</div>
+                        <p class="text-lg text-gray-600 mb-2">点击或拖拽图片到此处</p>
+                        <p class="text-sm text-gray-400">支持 JPG、PNG、GIF 格式</p>
+                    </div>
+                    <div id="imagePreview" class="mt-4 hidden">
+                        <img id="previewImg" src="" alt="预览" class="max-w-xs mx-auto rounded-lg shadow-md">
+                    </div>
+                    <div class="mt-4">
+                        <button id="btnImageAnalyze" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            🚀 识别图片数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF Upload Panel -->
+            <div id="panelPDF" class="tab-panel hidden">
+                <div class="text-center">
+                    <input type="file" id="pdfInput" accept=".pdf" class="hidden">
+                    <div id="pdfDropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-12 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all duration-200 cursor-pointer">
+                        <div class="text-6xl mb-4">📕</div>
+                        <p class="text-lg text-gray-600 mb-2">点击或拖拽PDF文件到此处</p>
+                        <p class="text-sm text-gray-400">支持 PDF 格式文件</p>
+                    </div>
+                    <div id="pdfInfo" class="mt-4 hidden">
+                        <p class="text-gray-600">文件名: <span id="pdfFileName"></span></p>
+                    </div>
+                    <div class="mt-4">
+                        <button id="btnPDFAnalyze" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            🚀 解析PDF数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Datasets -->
+            <div class="border-t border-gray-200 pt-8 mt-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📊</span> 训练数据集范例
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button class="sample-btn bg-red-50 hover:bg-red-100 text-red-700 font-medium py-3 px-4 rounded-xl border-2 border-red-200 hover:border-red-400 transition-all duration-200" data-type="high_risk">
+                        🔴 高风险样本
+                    </button>
+                    <button class="sample-btn bg-orange-50 hover:bg-orange-100 text-orange-700 font-medium py-3 px-4 rounded-xl border-2 border-orange-200 hover:border-orange-400 transition-all duration-200" data-type="medium_risk">
+                        🟠 中风险样本
+                    </button>
+                    <button class="sample-btn bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium py-3 px-4 rounded-xl border-2 border-yellow-200 hover:border-yellow-400 transition-all duration-200" data-type="low_risk">
+                        🟡 低风险样本
+                    </button>
+                    <button class="sample-btn bg-green-50 hover:bg-green-100 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-400 transition-all duration-200" data-type="normal">
+                        🟢 正常样本
+                    </button>
+                </div>
+            </div>
+
+            <!-- Official Cases -->
+            <div class="border-t border-gray-200 pt-8 mt-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>⚖️</span> 官方案件范例（已查处案例）
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="sample-btn bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium py-4 px-6 rounded-xl border-2 border-amber-200 hover:border-amber-400 transition-all duration-200 text-left" data-type="case_hospital_fraud">
+                        🏥 医院虚构住院案
+                    </button>
+                    <button class="sample-btn bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium py-4 px-6 rounded-xl border-2 border-amber-200 hover:border-amber-400 transition-all duration-200 text-left" data-type="case_doctor_kickback">
+                        👨⚕️ 医生回扣案
+                    </button>
+                    <button class="sample-btn bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium py-4 px-6 rounded-xl border-2 border-amber-200 hover:border-amber-400 transition-all duration-200 text-left" data-type="case_patient_fraud">
+                        👤 患者串号就医案
+                    </button>
+                    <button class="sample-btn bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium py-4 px-6 rounded-xl border-2 border-amber-200 hover:border-amber-400 transition-all duration-200 text-left" data-type="case_drug_abuse">
+                        💊 药品滥用套现案
+                    </button>
+                </div>
+                <div id="caseInfo" class="mt-4 p-4 bg-amber-50 rounded-xl border-2 border-amber-200 hidden"></div>
+            </div>
+
+            <!-- Format Guide Button -->
+            <div class="text-center mt-8">
+                <button id="btnFormatGuide" class="text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-4">
+                    📝 查看数据输入格式说明
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden bg-white rounded-2xl shadow-lg p-16 text-center">
+            <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mb-4"></div>
+            <p class="text-gray-600 text-lg">正在分析数据，请稍候...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6"></div>
+
+        <!-- Result Section -->
+        <section id="resultSection" class="hidden">
+            <!-- Risk Header -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <span id="riskBadge" class="text-3xl font-bold px-8 py-4 rounded-full text-white">高风险</span>
+                        <div>
+                            <div class="text-sm text-gray-600">风险等级</div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div id="scoreValue" class="text-7xl font-bold text-indigo-600">85</div>
+                        <div class="text-sm text-gray-600 mt-2">综合评分</div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 border-l-4 border-indigo-600 p-5 rounded-r-xl mt-6">
+                    <p class="text-gray-800"><strong>💡 建议处置：</strong><span id="suggestion">建议移交</span></p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div id="riskGaugeChart" class="bg-white rounded-2xl shadow-lg p-6" style="height: 450px;"></div>
+                <div id="riskRadarChart" class="bg-white rounded-2xl shadow-lg p-6" style="height: 450px;"></div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <div id="totalPatients" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div class="text-sm text-gray-600 mt-2">患者数量</div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <div id="totalVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div class="text-sm text-gray-600 mt-2">就诊次数</div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <div id="totalExpenses" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div class="text-sm text-gray-600 mt-2">总费用(元)</div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <div id="avgExpense" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div class="text-sm text-gray-600 mt-2">平均费用(元)</div>
+                </div>
+            </div>
+
+            <!-- Top Factors -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>🔴</span> 异常指标汇总（TOP 5）
+                </h3>
+                <ul id="topFactors" class="space-y-3"></ul>
+            </div>
+
+            <!-- Detailed Factors Table -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📋</span> 具体风险描述
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">风险类型</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">异常项</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">详细说明</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">风险分值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailedFactors"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Data Support -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📊</span> 数据支撑
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-gray-50 rounded-xl p-6 text-center">
+                        <div id="nightVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                        <div class="text-sm text-gray-600 mt-2">夜间就诊次数</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-6 text-center">
+                        <div id="holidayVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                        <div class="text-sm text-gray-600 mt-2">节假日就诊次数</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warnings -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>⚠️</span> 单项指标预警
+                </h3>
+                <div id="warningsContainer" class="space-y-3"></div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📈</span> 风险指标对比分析
+                </h3>
+                <div id="indicatorsContainer" class="space-y-3 mb-6"></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">风险指标</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">当前值</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">正常范围</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">偏离度</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="text-center">
+                <button id="btnReset" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                    🔄 重新分析
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Format Modal -->
+    <div id="dataFormatModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-11/12 max-w-3xl max-h-[80vh] overflow-y-auto relative">
+            <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">📝 数据输入格式说明</h3>
+                <button id="btnCloseModal" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            </div>
+            <pre class="bg-gray-900 text-gray-100 p-6 rounded-xl overflow-x-auto text-sm leading-relaxed font-mono">{
+  "patients": [
+    {"patient_id": "P001", "name": "张三", "age": 45, "gender": "男", "insurance_type": "职工医保"}
+  ],
+  "visits": [
+    {"visit_id": "V001", "patient_id": "P001", "hospital_id": "H001", 
+     "department": "心内科", "visit_date": "2024-01-05", "diagnosis": "高血压"}
+  ],
+  "expenses": [
+    {"expense_id": "E001", "visit_id": "V001", "amount": 520, "self_pay_ratio": 0.15}
+  ],
+  "doctors": {"D001": {"name": "刘医生", "department": "心内科"}},
+  "hospitals": {"H001": {"name": "第一人民医院", "level": "三级甲等"}},
+  "drug_mismatch": [],
+  "duplicate_tests": [],
+  "patient_anomalies": [],
+  "suspicious_doctors": [],
+  "abnormal_hospitals": []
+}</pre>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        //  统一前后端风险分析系统 v1.0
+        //  - 算法与 app.py 的 analyze_risk() 完全对齐
+        //  - 自动检测 Flask 后端是否可用，选择最优分析模式
+        // ============================================
+        const BACKEND_BASE = 'http://127.0.0.1:5000';
+
+        // --------- 全局状态（模式检测结果）---------
+        const runtimeState = {
+            serverAvailable: false,
+            backendVersion: null,
+            currentMode: 'auto',  // auto | local | server
+        };
+
+        // --------- DOM Elements ---------
+        const uploadSection = document.getElementById('uploadSection');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultSection = document.getElementById('resultSection');
+        const caseInfo = document.getElementById('caseInfo');
+        const dataFormatModal = document.getElementById('dataFormatModal');
+        const modeStatusBadge = document.getElementById('modeStatusBadge');
+        const modeHint = document.getElementById('modeHint');
+        const serverModeRadio = document.querySelector('input[name="analysisMode"][value="server"]');
+        const serverModeLabel = document.getElementById('serverModeLabel');
+
+        // ============================================
+        //  启动：后端健康检测 + UI 更新
+        // ============================================
+        async function probeBackendAndUpdateUI() {
+            try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 1500);
+                const resp = await fetch(`${BACKEND_BASE}/health`, { signal: controller.signal });
+                clearTimeout(timer);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    runtimeState.serverAvailable = true;
+                    runtimeState.backendVersion = data.version || 'unknown';
+                }
+            } catch (e) {
+                runtimeState.serverAvailable = false;
+            }
+            updateModeUI();
+        }
+
+        function updateModeUI() {
+            if (runtimeState.serverAvailable) {
+                modeStatusBadge.textContent = '✅ 后端在线';
+                modeStatusBadge.className = 'text-xs px-2 py-1 rounded-full bg-green-100 text-green-800';
+                serverModeRadio.disabled = false;
+                serverModeLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+                modeHint.textContent = `检测到 Flask 后端 v${runtimeState.backendVersion}，自动模式下将优先使用后端计算（结果与本地完全一致）`;
+                modeHint.className = 'mt-2 text-xs text-green-600';
+            } else {
+                modeStatusBadge.textContent = '❌ 后端离线';
+                modeStatusBadge.className = 'text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-800';
+                serverModeRadio.disabled = true;
+                serverModeLabel.classList.add('opacity-50', 'cursor-not-allowed');
+                modeHint.textContent = '未检测到 Flask 后端（启动方式：python app.py），当前使用纯前端算法（算法逻辑已与后端统一）';
+                modeHint.className = 'mt-2 text-xs text-orange-600';
+                // 如果用户选中了不可用的 server 模式，回退到 auto
+                const chosen = document.querySelector('input[name="analysisMode"]:checked');
+                if (chosen && chosen.value === 'server') {
+                    document.querySelector('input[name="analysisMode"][value="auto"]').checked = true;
+                }
+            }
+        }
+
+        document.querySelectorAll('input[name="analysisMode"]').forEach(r => {
+            r.addEventListener('change', () => { runtimeState.currentMode = r.value; });
+        });
+
+        function shouldUseServer() {
+            const mode = (document.querySelector('input[name="analysisMode"]:checked') || {}).value || runtimeState.currentMode;
+            if (mode === 'server') return runtimeState.serverAvailable;
+            if (mode === 'local') return false;
+            // auto
+            return runtimeState.serverAvailable;
+        }
+
+        // ============================================
+        //  事件绑定
+        // ============================================
+        document.getElementById('btnSelectFile').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('btnUseSample').addEventListener('click', () => {
+            loadSampleData('default');
+        });
+
+        document.getElementById('btnFormatGuide').addEventListener('click', () => {
+            dataFormatModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btnCloseModal').addEventListener('click', () => {
+            dataFormatModal.classList.add('hidden');
+        });
+
+        dataFormatModal.addEventListener('click', (e) => {
+            if (e.target === dataFormatModal) dataFormatModal.classList.add('hidden');
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !dataFormatModal.classList.contains('hidden')) {
+                dataFormatModal.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('btnReset').addEventListener('click', resetAnalysis);
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.id.replace('tab', 'panel');
+                document.querySelectorAll('.tab-btn').forEach(t => {
+                    t.classList.remove('active', 'text-indigo-600', 'border-indigo-600');
+                    t.classList.add('text-gray-500');
+                });
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+                btn.classList.add('active', 'text-indigo-600', 'border-indigo-600');
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('btnTextAnalyze').addEventListener('click', () => {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) { showError('请输入数据文本'); return; }
+            const data = parseTextData(text);
+            if (data) {
+                showLoading();
+                runAnalysis(data, null);
+            } else {
+                showError('无法解析文本数据，请检查格式');
+            }
+        });
+
+        document.getElementById('btnTextClear').addEventListener('click', () => {
+            document.getElementById('textInput').value = '';
+        });
+
+        document.getElementById('imageDropZone').addEventListener('click', () => {
+            document.getElementById('imageInput').click();
+        });
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('previewImg').src = event.target.result;
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        document.getElementById('btnImageAnalyze').addEventListener('click', () => {
+            showError('图片识别功能需要后端OCR服务支持，当前版本暂不支持此功能');
+        });
+
+        document.getElementById('pdfDropZone').addEventListener('click', () => {
+            document.getElementById('pdfInput').click();
+        });
+        document.getElementById('pdfInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('pdfFileName').textContent = file.name;
+                document.getElementById('pdfInfo').classList.remove('hidden');
+            }
+        });
+        document.getElementById('btnPDFAnalyze').addEventListener('click', () => {
+            showError('PDF解析功能需要后端PDF解析服务支持，当前版本暂不支持此功能');
+        });
+
+        document.querySelectorAll('.sample-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const type = btn.getAttribute('data-type');
+                if (type) loadSampleData(type);
+            });
+        });
+
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+        // ============================================
+        //  文件上传（自动模式：优先后端；失败/本地模式：本地解析）
+        // ============================================
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showLoading();
+
+            if (shouldUseServer()) {
+                // 后端模式：文件上传到 Flask /analyze
+                const fd = new FormData();
+                fd.append('file', file);
+                fetch(`${BACKEND_BASE}/analyze`, { method: 'POST', body: fd })
+                    .then(r => r.json().catch(err => ({ error: '响应解析失败: ' + err.message })))
+                    .then(payload => {
+                        if (payload && payload.error) throw new Error(payload.error);
+                        if (!payload || typeof payload.score !== 'number') throw new Error('后端返回格式异常');
+                        showAnalysisDone(payload, null);
+                    })
+                    .catch(err => {
+                        console.warn('后端分析失败，自动降级到本地解析：', err);
+                        // 降级：本地读文件
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            try {
+                                const data = JSON.parse(ev.target.result);
+                                runAnalysis(data, null);
+                            } catch (e2) {
+                                showError('文件格式错误，请确保是有效的 JSON 格式');
+                            }
+                        };
+                        reader.onerror = () => showError('读取文件失败');
+                        reader.readAsText(file);
+                    });
+            } else {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        runAnalysis(data, null);
+                    } catch (e2) {
+                        showError('文件格式错误，请确保是有效的 JSON 格式');
+                    }
+                };
+                reader.onerror = () => showError('读取文件失败');
+                reader.readAsText(file);
+            }
+        }
+
+        // ============================================
+        //  示例数据加载 + 分析入口
+        // ============================================
+        function loadSampleData(datasetType) {
+            showLoading();
+            const data = getSampleData(datasetType);
+            runAnalysis(data, datasetType.startsWith('case_') ? datasetType : null);
+        }
+
+        /**
+         * 核心分析调度：根据模式选择后端API或本地 analyzeRisk
+         * @param {object} data - 医保数据
+         * @param {string|null} caseType - 若是官方案件，传入其类型用于展示 caseInfo
+         */
+        async function runAnalysis(data, caseType) {
+            let result;
+            const useServer = shouldUseServer();
+            try {
+                if (useServer) {
+                    // 调后端
+                    const resp = await fetch(`${BACKEND_BASE}/analyze`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+                    const payload = await resp.json();
+                    if (!resp.ok || payload.error) {
+                        throw new Error(payload.error || `HTTP ${resp.status}`);
+                    }
+                    result = payload;
+                } else {
+                    // 本地算法（与后端 analyze_risk 完全对齐）
+                    result = analyzeRisk(data);
+                }
+
+                // 最小格式保障
+                if (!result || typeof result.score !== 'number') {
+                    throw new Error('分析结果缺少 score 字段');
+                }
+            } catch (err) {
+                console.error('分析失败：', err);
+                if (useServer) {
+                    console.warn('后端失败，降级到本地再试一次');
+                    try {
+                        result = analyzeRisk(data);
+                    } catch (e2) {
+                        showError(`分析失败：${err.message}；本地降级也失败：${e2.message}`);
+                        return;
+                    }
+                } else {
+                    showError(`分析失败：${err.message}`);
+                    return;
+                }
+            }
+
+            // 模拟一点点加载动效，防止太快一闪而过
+            setTimeout(() => showAnalysisDone(result, caseType), 250);
+        }
+
+        function showLoading() {
+            uploadSection.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            caseInfo.classList.add('hidden');
+        }
+
+        function showAnalysisDone(result, caseType) {
+            loading.classList.add('hidden');
+            displayResult(result);
+            resultSection.classList.remove('hidden');
+            if (caseType) showCaseInfo(caseType);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            loading.classList.add('hidden');
+            uploadSection.style.display = 'block';
+        }
+
+        function resetAnalysis() {
+            resultSection.classList.add('hidden');
+            uploadSection.style.display = 'block';
+            document.getElementById('fileInput').value = '';
+            errorMessage.classList.add('hidden');
+            caseInfo.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ============================================
+        //  示例数据（保持不变，向后兼容）
+        // ============================================
+        function getSampleData(type) {
+            const samples = {
+                default: {
+                    patients: [
+                        {patient_id: "P001", name: "张三", age: 45, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "李四", age: 62, gender: "女", insurance_type: "居民医保"},
+                        {patient_id: "P003", name: "王五", age: 38, gender: "男", insurance_type: "职工医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "心内科", visit_date: "2024-01-05", diagnosis: "高血压"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "心内科", visit_date: "2024-01-06", diagnosis: "高血压"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H002", department: "骨科", visit_date: "2024-01-08", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V004", patient_id: "P003", hospital_id: "H001", department: "神经内科", visit_date: "2024-01-10", diagnosis: "头痛"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 520, self_pay_ratio: 0.15},
+                        {expense_id: "E002", visit_id: "V002", amount: 480, self_pay_ratio: 0.12},
+                        {expense_id: "E003", visit_id: "V003", amount: 850, self_pay_ratio: 0.20},
+                        {expense_id: "E004", visit_id: "V004", amount: 320, self_pay_ratio: 0.25}
+                    ],
+                    doctors: {"D001": {name: "刘医生", department: "心内科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "第一人民医院", level: "三级甲等"}, "H002": {name: "第二医院", level: "三级乙等"}},
+                    drug_mismatch: [], duplicate_tests: [], patient_anomalies: [],
+                    suspicious_doctors: [], abnormal_hospitals: []
+                },
+                high_risk: {
+                    patients: [
+                        {patient_id: "P001", name: "赵某", age: 68, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "钱某", age: 72, gender: "女", insurance_type: "居民医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2023-06-01", diagnosis: "脑梗塞"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2023-06-02", diagnosis: "脑梗塞"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "内科", visit_date: "2023-06-05", diagnosis: "冠心病"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 15000, self_pay_ratio: 0.02},
+                        {expense_id: "E002", visit_id: "V002", amount: 18000, self_pay_ratio: 0.01},
+                        {expense_id: "E003", visit_id: "V003", amount: 12000, self_pay_ratio: 0.02}
+                    ],
+                    doctors: {"D001": {name: "陈某", department: "内科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "XX康复医院", level: "二级"}},
+                    drug_mismatch: [
+                        {patient_id: "P001", drug: "白蛋白", diagnosis: "脑梗塞", visit_id: "V001"},
+                        {patient_id: "P002", drug: "白蛋白", diagnosis: "冠心病", visit_id: "V003"}
+                    ],
+                    duplicate_tests: [{patient_id: "P001", test_name: "脑部CT", visit_ids: ["V001", "V002"]}],
+                    patient_anomalies: [],
+                    suspicious_doctors: [{doctor_id: "D001", name: "陈某", description: "连续3个月开具高额检查单"}],
+                    abnormal_hospitals: [{id: "H001", name: "XX康复医院", description: "住院率异常，月均住院人次超出同类医院3倍"}]
+                },
+                medium_risk: {
+                    patients: [
+                        {patient_id: "P001", name: "孙某", age: 55, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "周某", age: 48, gender: "女", insurance_type: "职工医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-10", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-17", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-12", diagnosis: "颈椎病"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 3200, self_pay_ratio: 0.08},
+                        {expense_id: "E002", visit_id: "V002", amount: 2800, self_pay_ratio: 0.05},
+                        {expense_id: "E003", visit_id: "V003", amount: 2900, self_pay_ratio: 0.06}
+                    ],
+                    doctors: {"D001": {name: "林某", department: "骨科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "XX骨科医院", level: "二级"}},
+                    drug_mismatch: [{patient_id: "P001", drug: "进口止痛药", diagnosis: "腰椎间盘突出", visit_id: "V001"}],
+                    duplicate_tests: [], patient_anomalies: [],
+                    suspicious_doctors: [{doctor_id: "D001", name: "林某", description: "处方中高价药品占比偏高"}],
+                    abnormal_hospitals: []
+                },
+                low_risk: {
+                    patients: [{patient_id: "P001", name: "吴某", age: 42, gender: "男", insurance_type: "职工医保"}],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-05", diagnosis: "感冒"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-15", diagnosis: "复诊"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 180, self_pay_ratio: 0.20},
+                        {expense_id: "E002", visit_id: "V002", amount: 150, self_pay_ratio: 0.22}
+                    ],
+                    doctors: {"D001": {name: "郑医生", department: "内科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "社区医院", level: "一级"}},
+                    drug_mismatch: [], duplicate_tests: [], patient_anomalies: [],
+                    suspicious_doctors: [], abnormal_hospitals: []
+                },
+                normal: {
+                    patients: [{patient_id: "P001", name: "正常人", age: 35, gender: "男", insurance_type: "职工医保"}],
+                    visits: [{visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-05", diagnosis: "体检"}],
+                    expenses: [{expense_id: "E001", visit_id: "V001", amount: 200, self_pay_ratio: 0.25}],
+                    doctors: {"D001": {name: "普通医生", department: "内科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "三甲医院", level: "三级甲等"}},
+                    drug_mismatch: [], duplicate_tests: [], patient_anomalies: [],
+                    suspicious_doctors: [], abnormal_hospitals: []
+                },
+                case_hospital_fraud: {
+                    patients: [
+                        {patient_id: "P001", name: "张某", age: 65, gender: "男", insurance_type: "居民医保"},
+                        {patient_id: "P002", name: "李某", age: 70, gender: "女", insurance_type: "居民医保"},
+                        {patient_id: "P003", name: "王某", age: 68, gender: "男", insurance_type: "居民医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2023-06-01", diagnosis: "脑梗塞"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2023-06-02", diagnosis: "脑梗塞"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "内科", visit_date: "2023-06-02", diagnosis: "冠心病"},
+                        {visit_id: "V004", patient_id: "P002", hospital_id: "H001", department: "内科", visit_date: "2023-06-18", diagnosis: "冠心病"},
+                        {visit_id: "V005", patient_id: "P003", hospital_id: "H001", department: "内科", visit_date: "2023-06-05", diagnosis: "高血压"},
+                        {visit_id: "V006", patient_id: "P003", hospital_id: "H001", department: "内科", visit_date: "2023-06-20", diagnosis: "高血压"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 15000, self_pay_ratio: 0.02},
+                        {expense_id: "E002", visit_id: "V002", amount: 18000, self_pay_ratio: 0.01},
+                        {expense_id: "E003", visit_id: "V003", amount: 12000, self_pay_ratio: 0.02},
+                        {expense_id: "E004", visit_id: "V004", amount: 16000, self_pay_ratio: 0.01},
+                        {expense_id: "E005", visit_id: "V005", amount: 9000, self_pay_ratio: 0.02},
+                        {expense_id: "E006", visit_id: "V006", amount: 11000, self_pay_ratio: 0.01}
+                    ],
+                    doctors: {"D001": {name: "陈某", department: "内科", hospital_id: "H001"}, "D002": {name: "刘某", department: "内科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "XX康复医院", level: "二级"}},
+                    drug_mismatch: [
+                        {patient_id: "P001", drug: "白蛋白", diagnosis: "脑梗塞", visit_id: "V001"},
+                        {patient_id: "P002", drug: "白蛋白", diagnosis: "冠心病", visit_id: "V003"}
+                    ],
+                    duplicate_tests: [
+                        {patient_id: "P001", test_name: "脑部CT", visit_ids: ["V001", "V002"]},
+                        {patient_id: "P002", test_name: "心脏彩超", visit_ids: ["V003", "V004"]}
+                    ],
+                    patient_anomalies: [],
+                    suspicious_doctors: [{doctor_id: "D001", name: "陈某", description: "连续3个月开具高额检查单，涉及患者200余人"}],
+                    abnormal_hospitals: [{id: "H001", name: "XX康复医院", description: "住院率异常，月均住院人次超出同类医院3倍"}]
+                },
+                case_doctor_kickback: {
+                    patients: [
+                        {patient_id: "P001", name: "赵某", age: 55, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "孙某", age: 48, gender: "女", insurance_type: "职工医保"},
+                        {patient_id: "P003", name: "周某", age: 52, gender: "男", insurance_type: "职工医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-10", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-17", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-12", diagnosis: "颈椎病"},
+                        {visit_id: "V004", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-20", diagnosis: "颈椎病"},
+                        {visit_id: "V005", patient_id: "P003", hospital_id: "H001", department: "骨科", visit_date: "2023-08-15", diagnosis: "肩周炎"},
+                        {visit_id: "V006", patient_id: "P003", hospital_id: "H001", department: "骨科", visit_date: "2023-08-22", diagnosis: "肩周炎"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 3200, self_pay_ratio: 0.08},
+                        {expense_id: "E002", visit_id: "V002", amount: 2800, self_pay_ratio: 0.05},
+                        {expense_id: "E003", visit_id: "V003", amount: 2900, self_pay_ratio: 0.06},
+                        {expense_id: "E004", visit_id: "V004", amount: 3100, self_pay_ratio: 0.07},
+                        {expense_id: "E005", visit_id: "V005", amount: 2600, self_pay_ratio: 0.05},
+                        {expense_id: "E006", visit_id: "V006", amount: 2700, self_pay_ratio: 0.06}
+                    ],
+                    doctors: {"D001": {name: "林某", department: "骨科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "XX骨科医院", level: "二级"}},
+                    drug_mismatch: [
+                        {patient_id: "P001", drug: "进口止痛药", diagnosis: "腰椎间盘突出", visit_id: "V001"},
+                        {patient_id: "P002", drug: "进口止痛药", diagnosis: "颈椎病", visit_id: "V003"}
+                    ],
+                    duplicate_tests: [
+                        {patient_id: "P001", test_name: "腰椎MRI", visit_ids: ["V001", "V002"]},
+                        {patient_id: "P002", test_name: "颈椎MRI", visit_ids: ["V003", "V004"]}
+                    ],
+                    patient_anomalies: [],
+                    suspicious_doctors: [{doctor_id: "D001", name: "林某", description: "处方中高价药品占比达70%，远超同类医生平均水平"}],
+                    abnormal_hospitals: []
+                },
+                case_patient_fraud: {
+                    patients: [
+                        {patient_id: "P001", name: "吴某", age: 35, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "郑某", age: 38, gender: "女", insurance_type: "居民医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "皮肤科", visit_date: "2023-09-01", diagnosis: "湿疹"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H002", department: "皮肤科", visit_date: "2023-09-02", diagnosis: "湿疹"},
+                        {visit_id: "V003", patient_id: "P001", hospital_id: "H003", department: "皮肤科", visit_date: "2023-09-03", diagnosis: "湿疹"},
+                        {visit_id: "V004", patient_id: "P002", hospital_id: "H001", department: "口腔科", visit_date: "2023-09-05", diagnosis: "牙周炎"},
+                        {visit_id: "V005", patient_id: "P002", hospital_id: "H002", department: "口腔科", visit_date: "2023-09-06", diagnosis: "牙周炎"},
+                        {visit_id: "V006", patient_id: "P002", hospital_id: "H003", department: "口腔科", visit_date: "2023-09-07", diagnosis: "牙周炎"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 680, self_pay_ratio: 0.02},
+                        {expense_id: "E002", visit_id: "V002", amount: 720, self_pay_ratio: 0.01},
+                        {expense_id: "E003", visit_id: "V003", amount: 700, self_pay_ratio: 0.02},
+                        {expense_id: "E004", visit_id: "V004", amount: 580, self_pay_ratio: 0.01},
+                        {expense_id: "E005", visit_id: "V005", amount: 620, self_pay_ratio: 0.02},
+                        {expense_id: "E006", visit_id: "V006", amount: 600, self_pay_ratio: 0.01}
+                    ],
+                    doctors: {"D001": {name: "黄某", department: "皮肤科", hospital_id: "H001"}, "D002": {name: "罗某", department: "口腔科", hospital_id: "H001"}},
+                    hospitals: {"H001": {name: "第一医院", level: "三级甲等"}, "H002": {name: "第二医院", level: "三级乙等"}, "H003": {name: "第三医院", level: "三级甲等"}},
+                    drug_mismatch: [
+                        {patient_id: "P001", drug: "激素类药膏", diagnosis: "湿疹", visit_id: "V001"},
+                        {patient_id: "P001", drug: "激素类药膏", diagnosis: "湿疹", visit_id: "V002"},
+                        {patient_id: "P001", drug: "激素类药膏", diagnosis: "湿疹", visit_id: "V003"}
+                    ],
+                    duplicate_tests: [],
+                    patient_anomalies: [
+                        {patient_id: "P001", type: "串号就医", description: "使用妻子医保卡就诊3次"},
+                        {patient_id: "P002", type: "冒名就医", description: "使用母亲医保卡就诊3次"}
+                    ],
+                    suspicious_doctors: [], abnormal_hospitals: []
+                },
+                case_drug_abuse: {
+                    patients: [
+                        {patient_id: "P001", name: "王某", age: 45, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "刘某", age: 52, gender: "女", insurance_type: "居民医保"}
+                    ],
+                    visits: [
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "神经内科", visit_date: "2023-10-01", diagnosis: "偏头痛"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "神经内科", visit_date: "2023-10-08", diagnosis: "偏头痛"},
+                        {visit_id: "V003", patient_id: "P001", hospital_id: "H001", department: "神经内科", visit_date: "2023-10-15", diagnosis: "偏头痛"},
+                        {visit_id: "V004", patient_id: "P001", hospital_id: "H001", department: "神经内科", visit_date: "2023-10-22", diagnosis: "偏头痛"},
+                        {visit_id: "V005", patient_id: "P002", hospital_id: "H002", department: "疼痛科", visit_date: "2023-10-05", diagnosis: "关节炎"},
+                        {visit_id: "V006", patient_id: "P002", hospital_id: "H002", department: "疼痛科", visit_date: "2023-10-12", diagnosis: "关节炎"}
+                    ],
+                    expenses: [
+                        {expense_id: "E001", visit_id: "V001", amount: 1200, self_pay_ratio: 0.05},
+                        {expense_id: "E002", visit_id: "V002", amount: 1150, self_pay_ratio: 0.05},
+                        {expense_id: "E003", visit_id: "V003", amount: 1250, self_pay_ratio: 0.05},
+                        {expense_id: "E004", visit_id: "V004", amount: 1180, self_pay_ratio: 0.05},
+                        {expense_id: "E005", visit_id: "V005", amount: 1800, self_pay_ratio: 0.03},
+                        {expense_id: "E006", visit_id: "V006", amount: 1750, self_pay_ratio: 0.03}
+                    ],
+                    doctors: {"D001": {name: "许某", department: "神经内科", hospital_id: "H001"}, "D002": {name: "何某", department: "疼痛科", hospital_id: "H002"}},
+                    hospitals: {"H001": {name: "XX综合医院", level: "三级甲等"}, "H002": {name: "XX疼痛专科医院", level: "二级"}},
+                    drug_mismatch: [
+                        {patient_id: "P001", drug: "麻醉类止痛药", diagnosis: "偏头痛", visit_id: "V001"},
+                        {patient_id: "P001", drug: "麻醉类止痛药", diagnosis: "偏头痛", visit_id: "V002"},
+                        {patient_id: "P002", drug: "麻醉类止痛药", diagnosis: "关节炎", visit_id: "V005"}
+                    ],
+                    duplicate_tests: [],
+                    patient_anomalies: [
+                        {patient_id: "P001", type: "药品套现", description: "连续4周开具麻醉类药物，数量超出正常治疗需求"},
+                        {patient_id: "P002", type: "药品套现", description: "连续2周开具大量高价止痛药"}
+                    ],
+                    suspicious_doctors: [{doctor_id: "D001", name: "许某", description: "麻醉类药物处方量超出医院警戒线"}],
+                    abnormal_hospitals: [{id: "H002", name: "XX疼痛专科医院", description: "麻醉药品使用量异常，超出同类医院2倍"}]
+                }
+            };
+            return samples[type] || samples.default;
+        }
+
+        function showCaseInfo(datasetType) {
+            const caseInfoContent = {
+                'case_hospital_fraud': {
+                    title: '🏥 医院虚构住院案 - 医保基金重大欺诈案件披露',
+                    description: '<strong>📋 案件概况</strong><br><div class="bg-yellow-50 p-4 rounded-lg my-3 border-l-4 border-yellow-400"><strong>涉案主体：</strong>XX康复医院（二级专科医院）<br><strong>案发时间：</strong>2023年6月<br><strong>涉案金额：</strong><span class="bg-yellow-300 px-2 py-1 rounded font-bold">280万元</span><br><strong>涉及患者：</strong>200余人次<br><strong>案件性质：</strong>机构型医保基金诈骗</div><strong>🔍 案件发现过程</strong><br>2023年5月，医保智能监控系统发出红色预警：XX康复医院住院人次异常增长，3个月内从月均50人飙升至150人。<br><br><strong>⚖️ 作案手法</strong><br><div class="bg-red-50 p-4 rounded-lg my-3 border-l-4 border-red-400">1. 通过社区"免费体检"吸引老年患者<br>2. 虚构住院记录，实际患者并未住院治疗<br>3. 过度检查：同一患者3天内重复脑部CT 2次<br>4. 违规用药：给不需要的患者开白蛋白等高价药</div><br><strong>📢 查处结果</strong><br><div class="bg-green-50 p-4 rounded-lg my-3 border-l-4 border-green-400">• 追回医保基金280万元<br>• 医院被吊销医疗机构执业许可证<br>• 法定代表人犯诈骗罪，判处有期徒刑8年</div>'
+                },
+                'case_doctor_kickback': {
+                    title: '👨⚕️ 医生回扣案 - 医药购销领域商业贿赂典型案例',
+                    description: '<strong>📋 案件概况</strong><br><div class="bg-yellow-50 p-4 rounded-lg my-3 border-l-4 border-yellow-400"><strong>涉案医生：</strong>林某（骨科副主任医师）<br><strong>所在医院：</strong>XX骨科医院<br><strong>案发时间：</strong>2023年8月<br><strong>涉案金额：</strong><span class="bg-yellow-300 px-2 py-1 rounded font-bold">500万元</span><br><strong>案件性质：</strong>非国家工作人员受贿罪</div><strong>🔍 案件发现</strong><br>2023年6月，医院内部举报平台收到匿名举报。<br><br><strong>⚖️ 作案手法</strong><br><div class="bg-red-50 p-4 rounded-lg my-3 border-l-4 border-red-400">1. 与药企约定每盒药给10%-20%回扣<br>2. 优先开具高价进口药<br>3. 诱导患者多次复诊<br>4. 滥用MRI检查</div><br><strong>📢 查处结果</strong><br><div class="bg-green-50 p-4 rounded-lg my-3 border-l-4 border-green-400">• 医生被吊销执业证书<br>• 判处有期徒刑5年<br>• 3家药企共被罚款500万元</div>'
+                },
+                'case_patient_fraud': {
+                    title: '👤 患者串号就医案 - 社保卡转借诈骗警示案例',
+                    description: '<strong>📋 案件概况</strong><br><div class="bg-yellow-50 p-4 rounded-lg my-3 border-l-4 border-yellow-400"><strong>涉案人员：</strong>吴某、郑某<br><strong>案发时间：</strong>2023年9月<br><strong>涉案金额：</strong><span class="bg-yellow-300 px-2 py-1 rounded font-bold">35万元</span><br><strong>涉及医院：</strong>3家三甲医院</div><strong>🔍 发现过程</strong><br>医保人脸识别系统发现异常：同一身份证对应多个就诊人面孔。<br><br><strong>⚖️ 作案手法</strong><br><div class="bg-red-50 p-4 rounded-lg my-3 border-l-4 border-red-400">1. 使用他人社保卡就诊<br>2. 每天换一家医院规避监控<br>3. 专开可转售药品<br>4. 药品流入黑市转卖</div><br><strong>📢 查处结果</strong><br><div class="bg-green-50 p-4 rounded-lg my-3 border-l-4 border-green-400">• 追回医保基金35万元<br>• 2名患者被列入医保黑名单</div>'
+                },
+                'case_drug_abuse': {
+                    title: '💊 药品滥用套现案 - 麻醉药品管理警示案例',
+                    description: '<strong>📋 案件概况</strong><br><div class="bg-yellow-50 p-4 rounded-lg my-3 border-l-4 border-yellow-400"><strong>涉案人员：</strong>王某、刘某、许某医生<br><strong>所在医院：</strong>XX综合医院、XX疼痛专科医院<br><strong>案发时间：</strong>2023年10月<br><strong>涉案金额：</strong><span class="bg-yellow-300 px-2 py-1 rounded font-bold">89万元</span></div><strong>🔍 发现过程</strong><br>麻醉药品电子监管系统发现异常：许某医生处方量是其他医生的12倍。<br><br><strong>⚖️ 作案手法</strong><br><div class="bg-red-50 p-4 rounded-lg my-3 border-l-4 border-red-400">1. 医患勾结开具大量麻醉止痛药<br>2. 连续4周每周就诊开相同药物<br>3. 药物与诊断严重不符<br>4. 药品流入黑市转卖套现</div><br><strong>📢 查处结果</strong><br><div class="bg-green-50 p-4 rounded-lg my-3 border-l-4 border-green-400">• 追回医保基金89万元<br>• 许医生被吊销执业证书，判刑7年</div>'
+                }
+            };
+            const info = caseInfoContent[datasetType];
+            if (info) {
+                caseInfo.innerHTML = `<div class="font-bold text-lg text-amber-900 mb-2">${info.title}</div><div class="text-sm text-gray-700 leading-relaxed">${info.description}</div>`;
+                caseInfo.classList.remove('hidden');
+            }
+        }
+
+        // ============================================
+        //  【关键】统一风险分析算法 - 前端版
+        //  注意：这里的逻辑必须与 app.py 中的 analyze_risk() 完全一致
+        //  修改算法时请两边同步
+        // ============================================
+        function _getStatus(value, highThreshold, mediumThreshold) {
+            if (value > highThreshold) return 'high';
+            if (value > mediumThreshold) return 'medium';
+            return 'normal';
+        }
+
+        function analyzeRisk(data) {
+            // ---------- 数据提取 & 安全兜底 ----------
+            const patients = data.patients || [];
+            const visits = data.visits || [];
+            const expenses = data.expenses || [];
+            const drug_mismatch = data.drug_mismatch || [];
+            const duplicate_tests = data.duplicate_tests || [];
+            const patient_anomalies = data.patient_anomalies || [];
+            const suspicious_doctors = data.suspicious_doctors || [];
+            const abnormal_hospitals = data.abnormal_hospitals || [];
+
+            const total_patients = patients.length;
+            const total_visits = visits.length;
+            let total_expenses = 0;
+            for (const e of expenses) {
+                const v = parseFloat(e.amount || 0);
+                if (!isNaN(v)) total_expenses += v;
+            }
+            total_expenses = Math.round(total_expenses * 100) / 100;
+            const avg_expense = total_visits > 0 ? Math.round(total_expenses / total_visits) : 0;
+
+            // ---------- 统计项 ----------
+            let night_visits = 0;
+            let holiday_visits = 0;
+            const unique_hospitals = new Set();
+            const patient_department_counts = new Map(); // key: pid|dept
+            const visit_dates_by_patient = new Map();   // pid -> Date[]
+            const consecutive_day_flags = new Set();
+            const same_dept_high_freq = [];
+
+            for (const visit of visits) {
+                const hospital_id = visit.hospital_id;
+                const patient_id = visit.patient_id;
+                const department = visit.department || '';
+                const visit_date = visit.visit_date;
+                if (hospital_id) unique_hospitals.add(hospital_id);
+                if (patient_id && department) {
+                    const k = `${patient_id}||${department}`;
+                    patient_department_counts.set(k, (patient_department_counts.get(k) || 0) + 1);
+                }
+                const d = parseDate(visit_date);
+                if (d) {
+                    if (patient_id) {
+                        if (!visit_dates_by_patient.has(patient_id)) visit_dates_by_patient.set(patient_id, []);
+                        visit_dates_by_patient.get(patient_id).push(d);
+                    }
+                    const hour = d.getHours();
+                    const wd = d.getDay();
+                    if (hour >= 22 || hour < 6) night_visits++;
+                    if (wd === 0 || wd === 6) holiday_visits++;
+                }
+            }
+
+            // 连续两日就诊
+            for (const [pid, dates] of visit_dates_by_patient.entries()) {
+                if (dates.length >= 2) {
+                    dates.sort((a, b) => a - b);
+                    for (let i = 0; i < dates.length - 1; i++) {
+                        const diff = Math.round((dates[i + 1] - dates[i]) / 86400000);
+                        if (diff <= 1) { consecutive_day_flags.add(pid); break; }
+                    }
+                }
+            }
+            // 同科室高频
+            for (const [k, cnt] of patient_department_counts.entries()) {
+                if (cnt > 5) {
+                    const [pid, dept] = k.split('||');
+                    same_dept_high_freq.push([pid, dept, cnt]);
+                }
+            }
+
+            // 自付比例
+            const ratios = [];
+            for (const e of expenses) {
+                const r = e.self_pay_ratio;
+                if (typeof r === 'number') ratios.push(r);
+            }
+            const avg_self_pay_ratio = ratios.length ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0;
+
+            const drug_mismatch_count = drug_mismatch.length;
+            const duplicate_tests_count = duplicate_tests.length;
+            const patient_anomalies_count = patient_anomalies.length;
+            const suspicious_doctors_count = suspicious_doctors.length;
+            const abnormal_hospitals_count = abnormal_hospitals.length;
+
+            // ---------- Indicators（与后端完全一致） ----------
+            const indicatorDefs = [
+                { name: '就诊次数', value: total_visits, normal_range: '1-50', status: _getStatus(total_visits, 50, 20) },
+                { name: '平均费用(元)', value: avg_expense, normal_range: '100-800', status: _getStatus(avg_expense, 2000, 800) },
+                {
+                    name: '自付比例',
+                    value: `${(avg_self_pay_ratio * 100).toFixed(1)}%`,
+                    normal_range: '15%-30%',
+                    status: avg_self_pay_ratio < 0.05 ? 'high' : (avg_self_pay_ratio < 0.1 ? 'medium' : 'normal')
+                },
+                { name: '夜间就诊', value: night_visits, normal_range: '0-3', status: _getStatus(night_visits, 5, 2) },
+                { name: '节假日就诊', value: holiday_visits, normal_range: '0-2', status: _getStatus(holiday_visits, 4, 2) },
+                { name: '跨院就诊', value: unique_hospitals.size, normal_range: '1-2', status: _getStatus(unique_hospitals.size, 3, 2) },
+                { name: '药品不匹配', value: drug_mismatch_count, normal_range: '0', status: drug_mismatch_count > 0 ? 'high' : 'normal' },
+                { name: '重复检查', value: duplicate_tests_count, normal_range: '0', status: duplicate_tests_count > 0 ? 'high' : 'normal' },
+                { name: '患者异常', value: patient_anomalies_count, normal_range: '0', status: patient_anomalies_count > 0 ? 'high' : 'normal' },
+                { name: '可疑医生', value: suspicious_doctors_count, normal_range: '0', status: suspicious_doctors_count > 0 ? 'high' : 'normal' },
+                { name: '异常医院', value: abnormal_hospitals_count, normal_range: '0', status: abnormal_hospitals_count > 0 ? 'high' : 'normal' },
+            ];
+            const indicators = indicatorDefs.map(ind => ({
+                ...ind,
+                deviation: ind.status === 'high' ? '+100%' : (ind.status === 'medium' ? '+50%' : '正常')
+            }));
+
+            // ---------- 评分（与后端完全对齐的 add_factor 逻辑） ----------
+            let score = 0;
+            const detailed_factors = [];
+            const top_factors = [];
+            function addFactor(f_type, item, value, s, top_desc) {
+                score += s;
+                detailed_factors.push({ type: f_type, item, value, score: s });
+                if (top_desc) top_factors.push(top_desc);
+            }
+            if (night_visits > 0) {
+                const s = Math.min(night_visits * 5, 15);
+                addFactor('就诊行为异常', '夜间就诊', `${night_visits}次`, s, `夜间就诊${night_visits}次`);
+            }
+            if (holiday_visits > 2) {
+                const s = Math.min(holiday_visits * 4, 12);
+                addFactor('就诊行为异常', '节假日高频就诊', `${holiday_visits}次`, s, `节假日就诊${holiday_visits}次`);
+            }
+            if (consecutive_day_flags.size > 0) {
+                const pids = Array.from(consecutive_day_flags);
+                const s = Math.min(pids.length * 8, 20);
+                addFactor('就诊行为异常', '短期频繁就诊', `${pids.length}位患者连续就诊`, s, `${pids.length}位患者连续两日就诊`);
+            }
+            if (same_dept_high_freq.length > 0) {
+                const s = Math.min(same_dept_high_freq.length * 10, 20);
+                const sampleDesc = same_dept_high_freq.slice(0, 2).map(p => `${p[0]}在${p[1]}${p[2]}次`).join(', ');
+                addFactor('就诊行为异常', '重复就诊', sampleDesc, s, `${same_dept_high_freq.length}例同科室重复就诊`);
+            }
+            if (avg_self_pay_ratio < 0.05) {
+                addFactor('费用异常', '自付比例过低', `${(avg_self_pay_ratio * 100).toFixed(1)}%`, 15, '自付比例异常');
+            }
+            if (avg_expense > 2000) {
+                const s = Math.min(Math.floor(avg_expense / 200) * 5, 20);
+                addFactor('费用异常', '平均费用过高', `${avg_expense}元`, s, `平均费用${avg_expense}元`);
+            }
+            if (drug_mismatch_count > 0) {
+                const s = Math.min(drug_mismatch_count * 10, 25);
+                addFactor('医学逻辑异常', '药物使用异常', `${drug_mismatch_count}项不符`, s, `药品不匹配${drug_mismatch_count}项`);
+            }
+            if (duplicate_tests_count > 0) {
+                const s = Math.min(duplicate_tests_count * 8, 16);
+                addFactor('医学逻辑异常', '重复检查', `${duplicate_tests_count}次`, s, `重复检查${duplicate_tests_count}次`);
+            }
+            if (patient_anomalies_count > 0) {
+                const s = Math.min(patient_anomalies_count * 12, 24);
+                addFactor('患者行为异常', '患者异常行为', `${patient_anomalies_count}项`, s, `患者异常${patient_anomalies_count}项`);
+            }
+            if (suspicious_doctors_count > 0) {
+                const s = Math.min(suspicious_doctors_count * 15, 30);
+                addFactor('医生行为异常', '可疑医生', `${suspicious_doctors_count}人`, s, `可疑医生${suspicious_doctors_count}人`);
+            }
+            if (abnormal_hospitals_count > 0) {
+                const s = Math.min(abnormal_hospitals_count * 20, 40);
+                addFactor('医疗机构异常', '异常医疗机构', `${abnormal_hospitals_count}家`, s, `异常医疗机构${abnormal_hospitals_count}家`);
+            }
+
+            // ---------- warnings ----------
+            const high_indicators = indicators.filter(i => i.status === 'high');
+            const medium_indicators = indicators.filter(i => i.status === 'medium');
+            const warnings = [];
+            high_indicators.forEach(ind => warnings.push({ level: 'danger', message: `${ind.name}异常：${ind.value}，正常范围${ind.normal_range}` }));
+            medium_indicators.forEach(ind => warnings.push({ level: 'warning', message: `${ind.name}偏高：${ind.value}，正常范围${ind.normal_range}` }));
+
+            score = Math.min(Math.floor(score), 100);
+
+            let risk_level, risk_level_color, suggestion;
+            if (high_indicators.length > 0 || score >= 80) {
+                risk_level = '高风险'; risk_level_color = 'red';
+                suggestion = '【单项预警触发】存在高风险指标，建议立即移交医保稽查部门';
+            } else if (medium_indicators.length > 0 || score >= 50) {
+                risk_level = '中风险'; risk_level_color = 'orange';
+                suggestion = '存在中等风险指标，建议加强监控，进行人工复核';
+            } else if (score >= 20) {
+                risk_level = '低风险'; risk_level_color = 'yellow';
+                suggestion = '建议定期关注，暂无需特殊处理';
+            } else {
+                risk_level = '低异常'; risk_level_color = 'green';
+                suggestion = '数据正常，继续监控';
+            }
+
+            return {
+                score,
+                risk_level,
+                risk_level_color,
+                suggestion,
+                data_summary: { total_patients, total_visits, total_expenses, avg_expense, night_visits, holiday_visits },
+                indicators,
+                warnings,
+                top_factors: top_factors.slice(0, 5),
+                detailed_factors: detailed_factors.slice(0, 10)
+            };
+        }
+
+        // ============================================
+        //  结果展示（保持原样，依赖于统一的 result 格式）
+        // ============================================
+        function displayResult(result) {
+            document.getElementById('riskBadge').textContent = result.risk_level;
+            document.getElementById('riskBadge').className = `text-3xl font-bold px-8 py-4 rounded-full text-white bg-${result.risk_level_color}-500`;
+            document.getElementById('scoreValue').textContent = result.score;
+            document.getElementById('suggestion').textContent = result.suggestion;
+            document.getElementById('totalPatients').textContent = result.data_summary.total_patients;
+            document.getElementById('totalVisits').textContent = result.data_summary.total_visits;
+            document.getElementById('totalExpenses').textContent = Number(result.data_summary.total_expenses).toLocaleString();
+            document.getElementById('avgExpense').textContent = Number(result.data_summary.avg_expense).toLocaleString();
+            document.getElementById('nightVisits').textContent = result.data_summary.night_visits;
+            document.getElementById('holidayVisits').textContent = result.data_summary.holiday_visits;
+
+            const topFactorsList = document.getElementById('topFactors');
+            topFactorsList.innerHTML = '';
+            if (result.top_factors && result.top_factors.length) {
+                result.top_factors.forEach((factor, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'bg-red-50 p-4 rounded-lg border-l-4 border-red-400 flex justify-between items-center';
+                    li.innerHTML = `<span class="text-gray-700">${index + 1}. ${factor}</span>`;
+                    topFactorsList.appendChild(li);
+                });
+            } else {
+                topFactorsList.innerHTML = '<li class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400 text-green-800">✓ 未发现显著的异常风险因子</li>';
+            }
+
+            const detailedTable = document.getElementById('detailedFactors');
+            detailedTable.innerHTML = '';
+            result.detailed_factors.forEach(factor => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-100 hover:bg-gray-50';
+                const typeColors = {
+                    '就诊行为异常': 'bg-red-100 text-red-700',
+                    '医学逻辑异常': 'bg-orange-100 text-orange-700',
+                    '费用异常': 'bg-yellow-100 text-yellow-700',
+                    '医疗机构异常': 'bg-green-100 text-green-700',
+                    '医生行为异常': 'bg-blue-100 text-blue-700',
+                    '患者行为异常': 'bg-purple-100 text-purple-700'
+                };
+                const colorClass = typeColors[factor.type] || 'bg-gray-100 text-gray-700';
+                tr.innerHTML = `
+                    <td class="py-3 px-4"><span class="px-3 py-1 rounded-full text-xs font-medium ${colorClass}">${factor.type}</span></td>
+                    <td class="py-3 px-4 text-gray-700">${factor.item}</td>
+                    <td class="py-3 px-4 text-gray-600">${factor.value || '-'}</td>
+                    <td class="py-3 px-4"><span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold">+${factor.score}</span></td>
+                `;
+                detailedTable.appendChild(tr);
+            });
+
+            const warningsContainer = document.getElementById('warningsContainer');
+            warningsContainer.innerHTML = '';
+            if (result.warnings && result.warnings.length > 0) {
+                result.warnings.forEach(warning => {
+                    const div = document.createElement('div');
+                    div.className = warning.level === 'danger'
+                        ? 'bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center gap-3'
+                        : 'bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg flex items-center gap-3';
+                    div.innerHTML = `<span class="text-2xl">${warning.level === 'danger' ? '⚠️' : '⚠'}</span><span class="text-gray-700">${warning.message}</span>`;
+                    warningsContainer.appendChild(div);
+                });
+            } else {
+                warningsContainer.innerHTML = '<div class="text-center text-green-600 py-4">✓ 未检测到单项异常指标</div>';
+            }
+
+            const indicatorsContainer = document.getElementById('indicatorsContainer');
+            indicatorsContainer.innerHTML = '';
+            result.indicators.forEach(indicator => {
+                const div = document.createElement('div');
+                const statusColors = { high: 'border-red-400', medium: 'border-yellow-400', normal: 'border-green-400' };
+                div.className = `bg-white p-4 rounded-lg border-l-4 ${statusColors[indicator.status]} flex justify-between items-center`;
+                div.innerHTML = `<span class="font-medium text-gray-700">${indicator.name}</span><div class="flex items-center gap-3"><span class="font-bold text-lg">${indicator.value}</span><span class="text-xs text-gray-500">正常: ${indicator.normal_range}</span></div>`;
+                indicatorsContainer.appendChild(div);
+            });
+
+            const comparisonTable = document.getElementById('comparisonTable');
+            comparisonTable.innerHTML = '';
+            result.indicators.forEach(indicator => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-100 hover:bg-gray-50';
+                const statusBadge = indicator.status === 'high'
+                    ? '<span class="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">高风险</span>'
+                    : indicator.status === 'medium'
+                    ? '<span class="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">中风险</span>'
+                    : '<span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">正常</span>';
+                const deviationColor = indicator.status !== 'normal' ? 'text-red-600 font-bold' : 'text-green-600';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium">${indicator.name}</td>
+                    <td class="py-3 px-4 font-bold">${indicator.value}</td>
+                    <td class="py-3 px-4 text-gray-600">${indicator.normal_range}</td>
+                    <td class="py-3 px-4 ${deviationColor}">${indicator.deviation}</td>
+                    <td class="py-3 px-4">${statusBadge}</td>
+                `;
+                comparisonTable.appendChild(tr);
+            });
+
+            // Charts - 延迟初始化，保证容器已可见
+            setTimeout(() => {
+                try {
+                    const gaugeContainer = document.getElementById('riskGaugeChart');
+                    const radarContainer = document.getElementById('riskRadarChart');
+                    if (gaugeContainer) { gaugeContainer.style.width = '100%'; gaugeContainer.style.height = '450px'; }
+                    if (radarContainer) { radarContainer.style.width = '100%'; radarContainer.style.height = '450px'; }
+                    initRiskGaugeChart(result);
+                    initRiskRadarChart(result);
+                } catch (e) {
+                    console.error('图表初始化错误:', e);
+                }
+            }, 300);
+
+            if (!window.chartResizeListenerAdded) {
+                window.addEventListener('resize', () => {
+                    if (window.riskGaugeChart) window.riskGaugeChart.resize();
+                    if (window.riskRadarChart) window.riskRadarChart.resize();
+                });
+                window.chartResizeListenerAdded = true;
+            }
+        }
+
+        function initRiskGaugeChart(result) {
+            const chartDom = document.getElementById('riskGaugeChart');
+            if (!chartDom) return;
+            const chart = echarts.init(chartDom);
+            window.riskGaugeChart = chart;
+            const color = result.score >= 80 ? '#ef4444' : result.score >= 50 ? '#f97316' : result.score >= 20 ? '#eab308' : '#22c55e';
+            chart.setOption({
+                title: { text: '风险评分仪表盘', left: 'center', top: 10, textStyle: { fontSize: 18, fontWeight: 'bold', color: '#374151' } },
+                tooltip: { formatter: '{a} <br/>{b} : {c}' },
+                series: [{
+                    name: '风险评分', type: 'gauge', min: 0, max: 100, splitNumber: 10, radius: '85%',
+                    axisLine: { lineStyle: { width: 20, color: [[0.2, '#22c55e'], [0.5, '#eab308'], [0.8, '#f97316'], [1, '#ef4444']] } },
+                    pointer: { itemStyle: { color }, width: 5, length: '60%' },
+                    axisTick: { distance: -20, length: 8, lineStyle: { color: '#fff', width: 2 } },
+                    splitLine: { distance: -20, length: 20, lineStyle: { color: '#fff', width: 5 } },
+                    axisLabel: { color: '#374151', distance: 25, fontSize: 12 },
+                    detail: { valueAnimation: true, formatter: '{value}', color, fontSize: 36, fontWeight: 'bold', offsetCenter: [0, '70%'] },
+                    data: [{ value: result.score, name: result.risk_level }],
+                    title: { offsetCenter: [0, '90%'], fontSize: 14, color: '#6b7280' }
+                }]
+            }, { notMerge: true });
+        }
+
+        function initRiskRadarChart(result) {
+            const chartDom = document.getElementById('riskRadarChart');
+            if (!chartDom) return;
+            const chart = echarts.init(chartDom);
+            window.riskRadarChart = chart;
+            const indicators = [
+                { name: '就诊行为异常', max: 100 }, { name: '医学逻辑异常', max: 100 },
+                { name: '费用异常', max: 100 }, { name: '医疗机构异常', max: 100 },
+                { name: '医生行为异常', max: 100 }, { name: '患者行为异常', max: 100 }
+            ];
+            const actual = [0, 0, 0, 0, 0, 0];
+            const baseline = [20, 20, 20, 20, 20, 20];
+            result.detailed_factors.forEach(factor => {
+                const typeMap = {
+                    '就诊行为异常': 0, '医学逻辑异常': 1, '费用异常': 2,
+                    '医疗机构异常': 3, '医生行为异常': 4, '患者行为异常': 5
+                };
+                const idx = typeMap[factor.type];
+                if (idx !== undefined) actual[idx] = Math.min(actual[idx] + factor.score * 2, 100);
+            });
+            chart.setOption({
+                title: { text: '风险维度雷达图', left: 'center', top: 10, textStyle: { fontSize: 18, fontWeight: 'bold', color: '#374151' } },
+                tooltip: { trigger: 'item' },
+                legend: { data: ['实际值', '正常基线'], bottom: 10, textStyle: { fontSize: 12 } },
+                radar: {
+                    indicator: indicators, radius: '65%', splitNumber: 4,
+                    axisName: { color: '#374151', fontSize: 12 },
+                    splitLine: { lineStyle: { color: '#d1d5db' } },
+                    splitArea: { show: true, areaStyle: { color: ['#f9fafb', '#fff'] } },
+                    axisLine: { lineStyle: { color: '#d1d5db' } }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [
+                        { value: actual, name: '实际值', lineStyle: { color: '#ef4444', width: 3 }, areaStyle: { color: 'rgba(239,68,68,0.3)' }, itemStyle: { color: '#ef4444' } },
+                        { value: baseline, name: '正常基线', lineStyle: { color: '#22c55e', width: 2, type: 'dashed' }, areaStyle: { color: 'rgba(34,197,94,0.1)' }, itemStyle: { color: '#22c55e' } }
+                    ]
+                }]
+            }, { notMerge: true });
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = String(dateStr).match(/(\d{4})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/);
+            if (parts) return new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]));
+            return null;
+        }
+
+        function parseTextData(text) {
+            const lines = String(text || '').split('\n').filter(line => line.trim());
+            const patients = [], visits = [], expenses = [];
+            lines.forEach((line, index) => {
+                const patientMatch = line.match(/患者ID[:：]\s*([^,，]+)/);
+                const nameMatch = line.match(/姓名[:：]\s*([^,，]+)/);
+                const ageMatch = line.match(/年龄[:：]\s*(\d+)/);
+                const visitCountMatch = line.match(/就诊次数[:：]\s*(\d+)/);
+                const amountMatch = line.match(/费用[:：]\s*([\d,]+)元?/);
+                const ratioMatch = line.match(/自付比例[:：]\s*([\d.]+)%?/);
+                if (patientMatch) {
+                    const patientId = patientMatch[1].trim();
+                    patients.push({
+                        patient_id: patientId,
+                        name: nameMatch ? nameMatch[1].trim() : `患者${index + 1}`,
+                        age: ageMatch ? parseInt(ageMatch[1]) : 45,
+                        gender: '男',
+                        insurance_type: '职工医保'
+                    });
+                    if (visitCountMatch || amountMatch) {
+                        const visitId = `V${String(index + 1).padStart(3, '0')}`;
+                        visits.push({ visit_id: visitId, patient_id: patientId, hospital_id: 'H001', department: '内科', visit_date: '2024-01-05', diagnosis: '常规检查' });
+                        const amount = amountMatch ? parseInt(amountMatch[1].replace(/,/g, '')) : 500;
+                        const ratio = ratioMatch ? parseFloat(ratioMatch[1]) / 100 : 0.15;
+                        expenses.push({ expense_id: `E${String(index + 1).padStart(3, '0')}`, visit_id: visitId, amount, self_pay_ratio: ratio });
+                    }
+                }
+            });
+            return {
+                patients, visits, expenses,
+                doctors: { 'D001': { name: '医生', department: '内科', hospital_id: 'H001' } },
+                hospitals: { 'H001': { name: '医院', level: '三级甲等' } },
+                drug_mismatch: [], duplicate_tests: [], patient_anomalies: [],
+                suspicious_doctors: [], abnormal_hospitals: []
+            };
+        }
+
+        // ============================================
+        //  页面加载：启动后端健康检测
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            probeBackendAndUpdateUI();
+        });
+        // 兜底：如果 DOMContentLoaded 已触发就立即执行
+        if (document.readyState !== 'loading') {
+            setTimeout(probeBackendAndUpdateUI, 0);
+        }
+    </script>
+</body>
+</html>
