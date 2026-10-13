@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>医保欺诈风险识别系统</title>
+    <!-- 兜底样式：即使 Tailwind CDN 加载失败，hidden 依然生效（防止暴露未分析的结果区假默认值） -->
+    <style>.hidden{display:none!important}</style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
@@ -62,15 +64,15 @@
             <!-- File Upload Panel -->
             <div id="panelFile" class="tab-panel">
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <input type="file" id="fileInput" accept=".json,.txt,.csv" class="hidden">
+                    <input type="file" id="fileInput" accept=".json" class="hidden">
                     <button id="btnSelectFile" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
-                        📂 选择文件 (JSON/TXT/CSV)
+                        📂 选择文件 (JSON)
                     </button>
                     <button id="btnUseSample" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-lg transition-all duration-200 border border-gray-300">
                         📊 使用示例数据
                     </button>
                 </div>
-                <p class="text-center text-sm text-gray-500 mt-4">支持 JSON、TXT、CSV 格式文件</p>
+                <p class="text-center text-sm text-gray-500 mt-4">文件上传仅支持 JSON 格式；文本数据请使用上方「📝 文本输入」标签页</p>
             </div>
 
             <!-- Text Input Panel -->
@@ -144,7 +146,7 @@
                         🟡 低风险样本
                     </button>
                     <button class="sample-btn bg-green-50 hover:bg-green-100 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-400 transition-all duration-200" data-type="normal">
-                        🟢 正常样本
+                        🟢 低异常样本
                     </button>
                 </div>
             </div>
@@ -194,19 +196,19 @@
             <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-4">
-                        <span id="riskBadge" class="text-3xl font-bold px-8 py-4 rounded-full text-white">高风险</span>
+                        <span id="riskBadge" class="text-3xl font-bold px-8 py-4 rounded-full text-white">—</span>
                         <div>
                             <div class="text-sm text-gray-600">风险等级</div>
                         </div>
                     </div>
                     <div class="text-center">
-                        <div id="scoreValue" class="text-7xl font-bold text-indigo-600">85</div>
+                        <div id="scoreValue" class="text-7xl font-bold text-indigo-600">—</div>
                         <div class="text-sm text-gray-600 mt-2">综合评分</div>
                     </div>
                 </div>
 
                 <div class="bg-indigo-50 border-l-4 border-indigo-600 p-5 rounded-r-xl mt-6">
-                    <p class="text-gray-800"><strong>💡 建议处置：</strong><span id="suggestion">建议移交</span></p>
+                    <p class="text-gray-800"><strong>💡 建议处置：</strong><span id="suggestion">尚未分析</span></p>
                 </div>
             </div>
 
@@ -219,19 +221,19 @@
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-xl shadow p-6 text-center">
-                    <div id="totalPatients" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div id="totalPatients" class="text-4xl font-bold text-indigo-600">—</div>
                     <div class="text-sm text-gray-600 mt-2">患者数量</div>
                 </div>
                 <div class="bg-white rounded-xl shadow p-6 text-center">
-                    <div id="totalVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div id="totalVisits" class="text-4xl font-bold text-indigo-600">—</div>
                     <div class="text-sm text-gray-600 mt-2">就诊次数</div>
                 </div>
                 <div class="bg-white rounded-xl shadow p-6 text-center">
-                    <div id="totalExpenses" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div id="totalExpenses" class="text-4xl font-bold text-indigo-600">—</div>
                     <div class="text-sm text-gray-600 mt-2">总费用(元)</div>
                 </div>
                 <div class="bg-white rounded-xl shadow p-6 text-center">
-                    <div id="avgExpense" class="text-4xl font-bold text-indigo-600">0</div>
+                    <div id="avgExpense" class="text-4xl font-bold text-indigo-600">—</div>
                     <div class="text-sm text-gray-600 mt-2">平均费用(元)</div>
                 </div>
             </div>
@@ -271,11 +273,11 @@
                 </h3>
                 <div class="grid grid-cols-2 gap-6">
                     <div class="bg-gray-50 rounded-xl p-6 text-center">
-                        <div id="nightVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                        <div id="nightVisits" class="text-4xl font-bold text-indigo-600">—</div>
                         <div class="text-sm text-gray-600 mt-2">夜间就诊次数</div>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-6 text-center">
-                        <div id="holidayVisits" class="text-4xl font-bold text-indigo-600">0</div>
+                        <div id="holidayVisits" class="text-4xl font-bold text-indigo-600">—</div>
                         <div class="text-sm text-gray-600 mt-2">节假日就诊次数</div>
                     </div>
                 </div>
@@ -730,34 +732,51 @@
                 medium_risk: {
                     patients: [
                         {patient_id: "P001", name: "孙某", age: 55, gender: "男", insurance_type: "职工医保"},
-                        {patient_id: "P002", name: "周某", age: 48, gender: "女", insurance_type: "职工医保"}
+                        {patient_id: "P002", name: "周某", age: 48, gender: "女", insurance_type: "职工医保"},
+                        {patient_id: "P003", name: "吴某", age: 50, gender: "男", insurance_type: "居民医保"}
                     ],
                     visits: [
-                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-10", diagnosis: "腰椎间盘突出"},
-                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-17", diagnosis: "腰椎间盘突出"},
-                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-12", diagnosis: "颈椎病"}
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-12", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-13", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V003", patient_id: "P001", hospital_id: "H001", department: "骨科", visit_date: "2023-08-19", diagnosis: "腰椎间盘突出"},
+                        {visit_id: "V004", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-16", diagnosis: "颈椎病"},
+                        {visit_id: "V005", patient_id: "P002", hospital_id: "H001", department: "骨科", visit_date: "2023-08-17", diagnosis: "颈椎病"},
+                        {visit_id: "V006", patient_id: "P003", hospital_id: "H001", department: "骨科", visit_date: "2023-08-23", diagnosis: "肩周炎"}
                     ],
                     expenses: [
-                        {expense_id: "E001", visit_id: "V001", amount: 3200, self_pay_ratio: 0.08},
-                        {expense_id: "E002", visit_id: "V002", amount: 2800, self_pay_ratio: 0.05},
-                        {expense_id: "E003", visit_id: "V003", amount: 2900, self_pay_ratio: 0.06}
+                        {expense_id: "E001", visit_id: "V001", amount: 620, self_pay_ratio: 0.18},
+                        {expense_id: "E002", visit_id: "V002", amount: 580, self_pay_ratio: 0.16},
+                        {expense_id: "E003", visit_id: "V003", amount: 640, self_pay_ratio: 0.15},
+                        {expense_id: "E004", visit_id: "V004", amount: 550, self_pay_ratio: 0.18},
+                        {expense_id: "E005", visit_id: "V005", amount: 520, self_pay_ratio: 0.20},
+                        {expense_id: "E006", visit_id: "V006", amount: 480, self_pay_ratio: 0.22}
                     ],
                     doctors: {"D001": {name: "林某", department: "骨科", hospital_id: "H001"}},
                     hospitals: {"H001": {name: "XX骨科医院", level: "二级"}},
-                    drug_mismatch: [{patient_id: "P001", drug: "进口止痛药", diagnosis: "腰椎间盘突出", visit_id: "V001"}],
-                    duplicate_tests: [], patient_anomalies: [],
-                    suspicious_doctors: [{doctor_id: "D001", name: "林某", description: "处方中高价药品占比偏高"}],
-                    abnormal_hospitals: []
+                    drug_mismatch: [], duplicate_tests: [], patient_anomalies: [],
+                    suspicious_doctors: [], abnormal_hospitals: []
                 },
                 low_risk: {
-                    patients: [{patient_id: "P001", name: "吴某", age: 42, gender: "男", insurance_type: "职工医保"}],
+                    patients: [
+                        {patient_id: "P001", name: "吴某", age: 42, gender: "男", insurance_type: "职工医保"},
+                        {patient_id: "P002", name: "郑某", age: 39, gender: "女", insurance_type: "居民医保"},
+                        {patient_id: "P003", name: "冯某", age: 46, gender: "男", insurance_type: "职工医保"}
+                    ],
                     visits: [
-                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-05", diagnosis: "感冒"},
-                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-15", diagnosis: "复诊"}
+                        {visit_id: "V001", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-08", diagnosis: "感冒"},
+                        {visit_id: "V002", patient_id: "P001", hospital_id: "H001", department: "内科", visit_date: "2024-01-09", diagnosis: "复诊"},
+                        {visit_id: "V003", patient_id: "P002", hospital_id: "H001", department: "内科", visit_date: "2024-01-08", diagnosis: "咳嗽"},
+                        {visit_id: "V004", patient_id: "P002", hospital_id: "H001", department: "内科", visit_date: "2024-01-09", diagnosis: "复诊"},
+                        {visit_id: "V005", patient_id: "P003", hospital_id: "H001", department: "内科", visit_date: "2024-01-15", diagnosis: "头晕"},
+                        {visit_id: "V006", patient_id: "P003", hospital_id: "H001", department: "内科", visit_date: "2024-01-16", diagnosis: "复诊"}
                     ],
                     expenses: [
                         {expense_id: "E001", visit_id: "V001", amount: 180, self_pay_ratio: 0.20},
-                        {expense_id: "E002", visit_id: "V002", amount: 150, self_pay_ratio: 0.22}
+                        {expense_id: "E002", visit_id: "V002", amount: 150, self_pay_ratio: 0.22},
+                        {expense_id: "E003", visit_id: "V003", amount: 170, self_pay_ratio: 0.18},
+                        {expense_id: "E004", visit_id: "V004", amount: 140, self_pay_ratio: 0.20},
+                        {expense_id: "E005", visit_id: "V005", amount: 160, self_pay_ratio: 0.21},
+                        {expense_id: "E006", visit_id: "V006", amount: 150, self_pay_ratio: 0.22}
                     ],
                     doctors: {"D001": {name: "郑医生", department: "内科", hospital_id: "H001"}},
                     hospitals: {"H001": {name: "社区医院", level: "一级"}},
@@ -968,6 +987,11 @@
             const suspicious_doctors = data.suspicious_doctors || [];
             const abnormal_hospitals = data.abnormal_hospitals || [];
 
+            // ---------- 数据有效性校验：空数据直接报错，不再误判为高风险 ----------
+            if (patients.length === 0 && visits.length === 0 && expenses.length === 0) {
+                throw new Error('数据为空，没有可分析的患者、就诊或费用记录，请检查输入数据');
+            }
+
             const total_patients = patients.length;
             const total_visits = visits.length;
             let total_expenses = 0;
@@ -1003,9 +1027,13 @@
                         if (!visit_dates_by_patient.has(patient_id)) visit_dates_by_patient.set(patient_id, []);
                         visit_dates_by_patient.get(patient_id).push(d);
                     }
-                    const hour = d.getHours();
+                    // 夜间就诊：仅当日期中明确包含时间（如 "2024-01-05 23:30"）时才判定。
+                    // 只写年月日的记录不再被误判为凌晨就诊（此前会把每次就诊都算成夜间）。
+                    if (hasTimeInfo(visit_date)) {
+                        const hour = parseTimeHour(visit_date);
+                        if (hour >= 22 || hour < 6) night_visits++;
+                    }
                     const wd = d.getDay();
-                    if (hour >= 22 || hour < 6) night_visits++;
                     if (wd === 0 || wd === 6) holiday_visits++;
                 }
             }
@@ -1048,9 +1076,9 @@
                 { name: '平均费用(元)', value: avg_expense, normal_range: '100-800', status: _getStatus(avg_expense, 2000, 800) },
                 {
                     name: '自付比例',
-                    value: `${(avg_self_pay_ratio * 100).toFixed(1)}%`,
+                    value: ratios.length > 0 ? `${(avg_self_pay_ratio * 100).toFixed(1)}%` : '无费用数据',
                     normal_range: '15%-30%',
-                    status: avg_self_pay_ratio < 0.05 ? 'high' : (avg_self_pay_ratio < 0.1 ? 'medium' : 'normal')
+                    status: ratios.length === 0 ? 'normal' : (avg_self_pay_ratio < 0.05 ? 'high' : (avg_self_pay_ratio < 0.1 ? 'medium' : 'normal'))
                 },
                 { name: '夜间就诊', value: night_visits, normal_range: '0-3', status: _getStatus(night_visits, 5, 2) },
                 { name: '节假日就诊', value: holiday_visits, normal_range: '0-2', status: _getStatus(holiday_visits, 4, 2) },
@@ -1093,7 +1121,7 @@
                 const sampleDesc = same_dept_high_freq.slice(0, 2).map(p => `${p[0]}在${p[1]}${p[2]}次`).join(', ');
                 addFactor('就诊行为异常', '重复就诊', sampleDesc, s, `${same_dept_high_freq.length}例同科室重复就诊`);
             }
-            if (avg_self_pay_ratio < 0.05) {
+            if (ratios.length > 0 && avg_self_pay_ratio < 0.05) {
                 addFactor('费用异常', '自付比例过低', `${(avg_self_pay_ratio * 100).toFixed(1)}%`, 15, '自付比例异常');
             }
             if (avg_expense > 2000) {
@@ -1349,6 +1377,17 @@
             return null;
         }
 
+        // 日期字符串里是否明确写了时间（如 "2024-01-05 23:30"）
+        function hasTimeInfo(dateStr) {
+            return /\d{1,2}[:：]\d{2}/.test(String(dateStr || ''));
+        }
+
+        // 提取小时数（无时间信息时返回 0，但调用前应先经 hasTimeInfo 判断）
+        function parseTimeHour(dateStr) {
+            const m = String(dateStr || '').match(/(\d{1,2})[:：]\d{2}/);
+            return m ? parseInt(m[1]) : 0;
+        }
+
         function parseTextData(text) {
             const lines = String(text || '').split('\n').filter(line => line.trim());
             const patients = [], visits = [], expenses = [];
@@ -1377,6 +1416,8 @@
                     }
                 }
             });
+            // 一条患者记录都没匹配到 → 视为解析失败，由调用方提示"无法解析"
+            if (patients.length === 0) return null;
             return {
                 patients, visits, expenses,
                 doctors: { 'D001': { name: '医生', department: '内科', hospital_id: 'H001' } },

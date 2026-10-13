@@ -7,7 +7,7 @@ from collections import defaultdict
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'sample_data'
-app.config['ALLOWED_EXTENSIONS'] = {'json', 'txt', 'csv'}
+app.config['ALLOWED_EXTENSIONS'] = {'json'}
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB文件上传限制
 
 # ============================================
@@ -45,6 +45,15 @@ def _get_status(value, thresholds):
         return 'medium'
     return 'normal'
 
+def _has_time_info(date_str):
+    """日期字符串里是否明确写了时间（如 '2024-01-05 23:30'）"""
+    return bool(re.search(r'\d{1,2}[:：]\d{2}', str(date_str)))
+
+def _parse_time_hour(date_str):
+    """提取小时数；调用前应先经 _has_time_info 判断"""
+    m = re.search(r'(\d{1,2})[:：]\d{2}', str(date_str))
+    return int(m.group(1)) if m else 0
+
 def analyze_risk(data):
     # ---------------- 数据提取与安全校验 ----------------
     patients = data.get('patients') or []
@@ -55,6 +64,10 @@ def analyze_risk(data):
     patient_anomalies = data.get('patient_anomalies') or []
     suspicious_doctors = data.get('suspicious_doctors') or []
     abnormal_hospitals = data.get('abnormal_hospitals') or []
+
+    # ---------------- 数据有效性校验：空数据直接报错，不再误判为高风险 ----------------
+    if not patients and not visits and not expenses:
+        raise ValueError('数据为空，没有可分析的患者、就诊或费用记录，请检查输入数据')
 
     total_patients = len(patients)
     total_visits = len(visits)
@@ -94,10 +107,13 @@ def analyze_risk(data):
         if date_obj:
             if patient_id:
                 visit_dates_by_patient[patient_id].append(date_obj)
-            hour = date_obj.hour
+            # 夜间就诊：仅当日期中明确包含时间时才判定，
+            # 只写年月日的记录不再被误判为凌晨就诊
+            if _has_time_info(visit_date):
+                hour = _parse_time_hour(visit_date)
+                if hour >= 22 or hour < 6:
+                    night_visits += 1
             weekday = date_obj.weekday()
-            if hour >= 22 or hour < 6:
-                night_visits += 1
             if weekday >= 5:  # 周六=5, 周日=6
                 holiday_visits += 1
 
@@ -144,10 +160,10 @@ def analyze_risk(data):
         },
         {
             'name': '自付比例',
-            'value': f"{round(avg_self_pay_ratio * 100, 1)}%",
+            'value': f"{round(avg_self_pay_ratio * 100, 1)}%" if ratios else '无费用数据',
             'normal_range': '15%-30%',
-            # 自付比例越低越异常
-            'status': 'high' if avg_self_pay_ratio < 0.05 else ('medium' if avg_self_pay_ratio < 0.1 else 'normal')
+            # 自付比例越低越异常（仅在有费用记录时评估）
+            'status': 'normal' if not ratios else ('high' if avg_self_pay_ratio < 0.05 else ('medium' if avg_self_pay_ratio < 0.1 else 'normal'))
         },
         {
             'name': '夜间就诊', 'value': night_visits,
@@ -229,8 +245,8 @@ def analyze_risk(data):
         sample_desc = ', '.join([f"{p[0]}在{p[1]}{p[2]}次" for p in same_dept_high_freq[:2]])
         add_factor('就诊行为异常', '重复就诊', sample_desc, factor_score, f'{len(same_dept_high_freq)}例同科室重复就诊')
 
-    # 5. 自付比例过低
-    if avg_self_pay_ratio < 0.05:
+    # 5. 自付比例过低（仅在有费用记录时评估）
+    if ratios and avg_self_pay_ratio < 0.05:
         factor_score = 15
         add_factor('费用异常', '自付比例过低', f'{round(avg_self_pay_ratio * 100, 1)}%', factor_score, '自付比例异常')
 
@@ -355,7 +371,7 @@ def analyze():
         if not file or file.filename == '':
             return jsonify({'error': '请选择文件'}), 400
         if not allowed_file(file.filename):
-            return jsonify({'error': '不支持的文件格式，请上传 JSON/TXT/CSV 文件'}), 400
+            return jsonify({'error': '不支持的文件格式，请上传 JSON 文件（文本数据请用前端文本输入）'}), 400
         try:
             content = file.read().decode('utf-8')
             data = json.loads(content)
@@ -373,6 +389,9 @@ def analyze():
     try:
         result = analyze_risk(data)
         return jsonify(result)
+    except ValueError as e:
+        # 数据本身无效（如空数据），属于客户端输入问题
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'分析失败: {str(e)}'}), 500
 
